@@ -21,11 +21,12 @@ func main() {
 	defer conn.Close()
 
 	buf := make([]byte, 1024)
-
+	//for {
 	if _, err := conn.Read(buf); err != nil {
 		fmt.Println("error reading from client: ", err.Error())
 		os.Exit(1)
 	}
 
 	_, err = conn.Write([]byte("+PONG\r\n"))
+	//}
 }
