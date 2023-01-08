@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -23,10 +24,12 @@ func main() {
 	buf := make([]byte, 1024)
 	for {
 		if _, err := conn.Read(buf); err != nil {
+			if err == io.EOF {
+				break
+			}
 			fmt.Println("error reading from client: ", err.Error())
 			os.Exit(1)
 		}
-
 		_, err = conn.Write([]byte("+PONG\r\n"))
 	}
 }
