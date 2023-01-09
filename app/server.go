@@ -23,10 +23,11 @@ func main() {
 
 	buf := make([]byte, 1024)
 	for {
-		if _, err := conn.Read(buf); err != nil {
-			if err == io.EOF {
-				break
-			}
+		_, err := conn.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
 			fmt.Println("error reading from client: ", err.Error())
 			os.Exit(1)
 		}
