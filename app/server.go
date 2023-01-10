@@ -5,7 +5,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"sync"
 )
 
 func main() {
@@ -15,32 +14,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	wg := &sync.WaitGroup{}
-
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		wg.Add(1)
-		go readClient(conn, wg)
+		go handleConnection(conn)
 	}
 }
 
-func readClient(conn net.Conn, wg *sync.WaitGroup) {
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
+
 	for {
 		buf := make([]byte, 1024)
+
 		_, err := conn.Read(buf)
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			fmt.Println("error reading from client: ", err.Error())
-			break
+			os.Exit(1)
 		}
 		_, err = conn.Write([]byte("+PONG\r\n"))
 	}
-	wg.Done()
 }
