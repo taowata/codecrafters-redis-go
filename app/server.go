@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 )
 
 func main() {
@@ -13,30 +14,33 @@ func main() {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
 	}
+
+	wg := &sync.WaitGroup{}
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-
-		go readClient(conn)
+		wg.Add(1)
+		go readClient(conn, wg)
 	}
 }
 
-func readClient(conn net.Conn) {
+func readClient(conn net.Conn, wg *sync.WaitGroup) {
 	defer conn.Close()
-
-	buf := make([]byte, 1024)
-	_, err := conn.Read(buf)
-	if err == io.EOF {
-		return
+	for {
+		buf := make([]byte, 1024)
+		_, err := conn.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Println("error reading from client: ", err.Error())
+			break
+		}
+		_, err = conn.Write([]byte("+PONG\r\n"))
 	}
-	if err != nil {
-		fmt.Println("error reading from client: ", err.Error())
-		//os.Exit(1)
-		return
-	}
-	_, err = conn.Write([]byte("+PONG\r\n"))
-
+	wg.Done()
 }
