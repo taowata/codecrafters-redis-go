@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -38,6 +39,16 @@ func handleConnection(conn net.Conn) {
 			fmt.Println("error reading from client: ", err.Error())
 			os.Exit(1)
 		}
-		_, err = conn.Write([]byte("+PONG\r\n"))
+		respArray := strings.Split(string(buf), "\r\n")
+		command := respArray[2]
+		switch command {
+		case "ping":
+			conn.Write([]byte("+PONG\r\n"))
+		case "echo":
+			conn.Write([]byte(fmt.Sprintf("+%s\r\n", respArray[4])))
+		default:
+			fmt.Printf("error undefiend command %s\n", command)
+			os.Exit(1)
+		}
 	}
 }
