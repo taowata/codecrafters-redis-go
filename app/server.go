@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -29,26 +30,25 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	for {
-		buf := make([]byte, 1024)
-
-		_, err := conn.Read(buf)
-		if err == io.EOF {
+		value, err := DecodeRESP(bufio.NewReader(conn))
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			fmt.Println("error reading from client: ", err.Error())
-			os.Exit(1)
+			fmt.Println("error decoding RESP: ", err.Error())
+			return
 		}
-		respArray := strings.Split(string(buf), "\r\n")
-		command := respArray[2]
+
+		command := value.Array()[0].String()
+		args := value.Array()[1:]
+
 		switch command {
 		case "ping":
 			conn.Write([]byte("+PONG\r\n"))
 		case "echo":
-			conn.Write([]byte(fmt.Sprintf("+%s\r\n", respArray[4])))
+			conn.Write([]byte(fmt.Sprintf("$%d\r\n%s\r\n", len(args[0].String()), args[0].String())))
 		default:
-			fmt.Printf("error undefiend command %s\n", command)
-			os.Exit(1)
+			conn.Write([]byte("-ERR unknown command '" + command + "'\r\n"))
 		}
 	}
 }
